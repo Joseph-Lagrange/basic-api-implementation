@@ -1,5 +1,6 @@
 package com.thoughtworks.rslist.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thoughtworks.rslist.domain.RsEvent;
 import org.junit.jupiter.api.Test;
@@ -81,8 +82,7 @@ public class RsControllerTest {
     @Test
     public void should_add_rs_event() throws Exception {
         RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment");
-        ObjectMapper objectMapper = new ObjectMapper();
-        String jsonString = objectMapper.writeValueAsString(rsEvent);
+        String jsonString = rsEvent2Json(rsEvent);
         mockMvc.perform(post("/rs/add").content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
@@ -103,8 +103,7 @@ public class RsControllerTest {
     @Test
     public void should_modify_rs_event() throws Exception {
         RsEvent rsEvent = new RsEvent("ThirdEvent", "Science");
-        ObjectMapper objectMapper = new ObjectMapper();
-        String jsonString = objectMapper.writeValueAsString(rsEvent);
+        String jsonString = rsEvent2Json(rsEvent);
         mockMvc.perform(post("/rs/modify?index=3").content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
@@ -128,5 +127,10 @@ public class RsControllerTest {
                 .andExpect(jsonPath("$[1].eventName", is("ThirdEvent")))
                 .andExpect(jsonPath("$[1].keyWord", is("Cultural")))
                 .andExpect(status().isOk());
+    }
+
+    private String rsEvent2Json(RsEvent rsEvent) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.writeValueAsString(rsEvent);
     }
 }
