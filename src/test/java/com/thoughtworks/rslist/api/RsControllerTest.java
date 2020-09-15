@@ -11,8 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -116,4 +115,18 @@ public class RsControllerTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    public void should_delete_rs_event() throws Exception {
+        mockMvc.perform(delete("/rs/delete?index=2")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/rs/list"))
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].eventName", is("FirstEvent")))
+                .andExpect(jsonPath("$[0].keyWord", is("Economy")))
+                .andExpect(jsonPath("$[1].eventName", is("ThirdEvent")))
+                .andExpect(jsonPath("$[1].keyWord", is("Cultural")))
+                .andExpect(status().isOk());
+    }
 }

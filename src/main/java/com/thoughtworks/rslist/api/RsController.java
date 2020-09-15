@@ -54,7 +54,12 @@ public class RsController {
     }
   }
 
-  private RsEvent json2RsEvent(@RequestBody String rsEvent) throws JsonProcessingException {
+  @DeleteMapping("/rs/delete")
+  public void deleteEvent(@RequestParam int index) {
+    rsList.remove(index - 1);
+  }
+
+  private RsEvent json2RsEvent(String rsEvent) throws JsonProcessingException {
     ObjectMapper objectMapper = new ObjectMapper();
     return objectMapper.readValue(rsEvent, RsEvent.class);
   }
@@ -62,5 +67,4 @@ public class RsController {
   private RsEvent getEventByIndex(int index) {
     return rsList.get(index - 1);
   }
-
 }
