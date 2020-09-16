@@ -29,5 +29,4 @@ public class RsEventHandler {
         logger.error(errorMessage);
         return ResponseEntity.badRequest().body(error);
     }
-
 }

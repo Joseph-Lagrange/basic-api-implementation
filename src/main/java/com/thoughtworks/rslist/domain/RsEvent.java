@@ -53,5 +53,4 @@ public class RsEvent {
     public void setUser(User user) {
         this.user = user;
     }
-
 }

@@ -2,6 +2,7 @@ package com.thoughtworks.rslist.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import com.thoughtworks.rslist.domain.RsEvent;
 import com.thoughtworks.rslist.domain.User;
 import com.thoughtworks.rslist.exception.Error;
@@ -9,6 +10,7 @@ import com.thoughtworks.rslist.exception.RsEventNotValidException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.validation.Valid;
 import java.net.URI;
@@ -20,6 +22,8 @@ import java.util.Objects;
 public class RsController {
 
     private List<RsEvent> rsList = initRsEventList();
+
+    private List<User> userList = Lists.newArrayList();
 
     private List<RsEvent> initRsEventList() {
         List<RsEvent> rsEventList = new ArrayList<>();
@@ -52,11 +56,18 @@ public class RsController {
     }
 
     @PostMapping("/rs/event")
-    public ResponseEntity addEvent(@RequestBody @Valid RsEvent rsEvent) throws JsonProcessingException {
+    public ResponseEntity addEvent(@RequestBody @Valid RsEvent rsEvent, RedirectAttributes attr) throws JsonProcessingException {
         rsList.add(rsEvent);
+        if (isUserNameExist(rsEvent.getUser().getName())) {
+            userList.add(rsEvent.getUser());
+        }
         return ResponseEntity.created(null)
                 .header("index", String.valueOf(rsList.size() - 1))
                 .build();
+    }
+
+    private boolean isUserNameExist(String name) {
+        return userList.stream().anyMatch(v -> v.getName().equals(name));
     }
 
     @PatchMapping("/rs/{index}")
