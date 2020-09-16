@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -23,6 +24,7 @@ public class RsControllerTest {
     @Autowired
     MockMvc mockMvc;
 
+    @DirtiesContext
     @Test
     public void should_get_rs_event_list() throws Exception {
         mockMvc.perform(get("/rs/list"))
@@ -36,6 +38,7 @@ public class RsControllerTest {
                 .andExpect(status().isOk());
     }
 
+    @DirtiesContext
     @Test
     public void should_get_one_rs_event() throws Exception {
         mockMvc.perform(get("/rs/1"))
@@ -52,6 +55,7 @@ public class RsControllerTest {
                 .andExpect(status().isOk());
     }
 
+    @DirtiesContext
     @Test
     public void should_rs_event_between() throws Exception {
         mockMvc.perform(get("/rs/list?start=1&end=2"))
@@ -79,11 +83,12 @@ public class RsControllerTest {
                 .andExpect(status().isOk());
     }
 
+    @DirtiesContext
     @Test
     public void should_add_rs_event() throws Exception {
         RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment");
         String jsonString = rsEvent2Json(rsEvent);
-        mockMvc.perform(post("/rs/add").content(jsonString)
+        mockMvc.perform(post("/rs/even").content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
@@ -100,11 +105,12 @@ public class RsControllerTest {
                 .andExpect(status().isOk());
     }
 
+    @DirtiesContext
     @Test
     public void should_modify_rs_event() throws Exception {
         RsEvent rsEvent = new RsEvent("ThirdEvent", "Science");
         String jsonString = rsEvent2Json(rsEvent);
-        mockMvc.perform(post("/rs/modify?index=3").content(jsonString)
+        mockMvc.perform(post("/rs/3").content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
@@ -114,9 +120,10 @@ public class RsControllerTest {
                 .andExpect(status().isOk());
     }
 
+    @DirtiesContext
     @Test
     public void should_delete_rs_event() throws Exception {
-        mockMvc.perform(delete("/rs/delete?index=2")
+        mockMvc.perform(delete("/rs/2")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 

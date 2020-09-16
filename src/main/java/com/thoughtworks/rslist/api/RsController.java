@@ -3,68 +3,141 @@ package com.thoughtworks.rslist.api;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thoughtworks.rslist.domain.RsEvent;
-import org.springframework.web.bind.annotation.*;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@RestController
-public class RsController {
+@SpringBootTest
+@AutoConfigureMockMvc
+public class RsControllerTest {
 
-    private List<RsEvent> rsList = initRsEventList();
+    @Autowired
+    MockMvc mockMvc;
 
-    private List<RsEvent> initRsEventList() {
-        List<RsEvent> rsEventList = new ArrayList<>();
-        rsEventList.add(new RsEvent("FirstEvent", "Economy"));
-        rsEventList.add(new RsEvent("SecondEvent", "Politics"));
-        rsEventList.add(new RsEvent("ThirdEvent", "Cultural"));
-        return rsEventList;
+    @DirtiesContext
+    @Test
+    public void should_get_rs_event_list() throws Exception {
+        mockMvc.perform(get("/rs/list"))
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[0].eventName", is("FirstEvent")))
+                .andExpect(jsonPath("$[0].keyWord", is("Economy")))
+                .andExpect(jsonPath("$[1].eventName", is("SecondEvent")))
+                .andExpect(jsonPath("$[1].keyWord", is("Politics")))
+                .andExpect(jsonPath("$[2].eventName", is("ThirdEvent")))
+                .andExpect(jsonPath("$[2].keyWord", is("Cultural")))
+                .andExpect(status().isOk());
     }
 
-    @GetMapping("/rs/{index}")
-    public RsEvent getOneRsEvent(@PathVariable int index) {
-        return rsList.get(index - 1);
+    @DirtiesContext
+    @Test
+    public void should_get_one_rs_event() throws Exception {
+        mockMvc.perform(get("/rs/1"))
+                .andExpect(jsonPath("$.eventName", is("FirstEvent")))
+                .andExpect(jsonPath("$.keyWord", is("Economy")))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/rs/2"))
+                .andExpect(jsonPath("$.eventName", is("SecondEvent")))
+                .andExpect(jsonPath("$.keyWord", is("Politics")))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/rs/3"))
+                .andExpect(jsonPath("$.eventName", is("ThirdEvent")))
+                .andExpect(jsonPath("$.keyWord", is("Cultural")))
+                .andExpect(status().isOk());
     }
 
-    @GetMapping("/rs/list")
-    public List<RsEvent> getRsEventBetween(@RequestParam(required = false) Integer start,
-                                           @RequestParam(required = false) Integer end) {
-        if (Objects.isNull(start) || Objects.isNull(end)) {
-            return rsList;
-        }
-        return rsList.subList(start - 1, end);
+    @DirtiesContext
+    @Test
+    public void should_rs_event_between() throws Exception {
+        mockMvc.perform(get("/rs/list?start=1&end=2"))
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].eventName", is("FirstEvent")))
+                .andExpect(jsonPath("$[0].keyWord", is("Economy")))
+                .andExpect(jsonPath("$[1].eventName", is("SecondEvent")))
+                .andExpect(jsonPath("$[1].keyWord", is("Politics")))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/rs/list?start=2&end=3"))
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].eventName", is("SecondEvent")))
+                .andExpect(jsonPath("$[0].keyWord", is("Politics")))
+                .andExpect(jsonPath("$[1].eventName", is("ThirdEvent")))
+                .andExpect(jsonPath("$[1].keyWord", is("Cultural")))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/rs/list?start=1&end=3"))
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[0].eventName", is("FirstEvent")))
+                .andExpect(jsonPath("$[0].keyWord", is("Economy")))
+                .andExpect(jsonPath("$[1].eventName", is("SecondEvent")))
+                .andExpect(jsonPath("$[1].keyWord", is("Politics")))
+                .andExpect(jsonPath("$[2].eventName", is("ThirdEvent")))
+                .andExpect(jsonPath("$[2].keyWord", is("Cultural")))
+                .andExpect(status().isOk());
     }
 
-    @PostMapping("/rs/add")
-    public void addEvent(@RequestBody String rsEvent) throws JsonProcessingException {
-        RsEvent event = json2RsEvent(rsEvent);
-        rsList.add(event);
+    @DirtiesContext
+    @Test
+    public void should_add_rs_event() throws Exception {
+        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment");
+        String jsonString = rsEvent2Json(rsEvent);
+        mockMvc.perform(post("/rs/even").content(jsonString)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/rs/list"))
+                .andExpect(jsonPath("$", hasSize(4)))
+                .andExpect(jsonPath("$[0].eventName", is("FirstEvent")))
+                .andExpect(jsonPath("$[0].keyWord", is("Economy")))
+                .andExpect(jsonPath("$[1].eventName", is("SecondEvent")))
+                .andExpect(jsonPath("$[1].keyWord", is("Politics")))
+                .andExpect(jsonPath("$[2].eventName", is("ThirdEvent")))
+                .andExpect(jsonPath("$[2].keyWord", is("Cultural")))
+                .andExpect(jsonPath("$[3].eventName", is("ForthEvent")))
+                .andExpect(jsonPath("$[3].keyWord", is("Entertainment")))
+                .andExpect(status().isOk());
     }
 
-    @PostMapping("/rs/modify")
-    public void modifyEvent(@RequestParam int index, @RequestBody String rsEvent) throws JsonProcessingException {
-        RsEvent event = json2RsEvent(rsEvent);
-        RsEvent modifyEvent = getEventByIndex(index);
-        if (Objects.nonNull(event.getEventName())) {
-            modifyEvent.setEventName(event.getEventName());
-        }
-        if (Objects.nonNull(event.getKeyWord())) {
-            modifyEvent.setKeyWord(event.getKeyWord());
-        }
+    @DirtiesContext
+    @Test
+    public void should_modify_rs_event() throws Exception {
+        RsEvent rsEvent = new RsEvent("ThirdEvent", "Science");
+        String jsonString = rsEvent2Json(rsEvent);
+        mockMvc.perform(post("/rs/3").content(jsonString)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/rs/3"))
+                .andExpect(jsonPath("$.eventName", is("ThirdEvent")))
+                .andExpect(jsonPath("$.keyWord", is("Science")))
+                .andExpect(status().isOk());
     }
 
-    @DeleteMapping("/rs/delete")
-    public void deleteEvent(@RequestParam int index) {
-        rsList.remove(index - 1);
+    @DirtiesContext
+    @Test
+    public void should_delete_rs_event() throws Exception {
+        mockMvc.perform(delete("/rs/2")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/rs/list"))
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].eventName", is("FirstEvent")))
+                .andExpect(jsonPath("$[0].keyWord", is("Economy")))
+                .andExpect(jsonPath("$[1].eventName", is("ThirdEvent")))
+                .andExpect(jsonPath("$[1].keyWord", is("Cultural")))
+                .andExpect(status().isOk());
     }
 
-    private RsEvent json2RsEvent(String rsEvent) throws JsonProcessingException {
+    private String rsEvent2Json(RsEvent rsEvent) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(rsEvent, RsEvent.class);
-    }
-
-    private RsEvent getEventByIndex(int index) {
-        return rsList.get(index - 1);
+        return objectMapper.writeValueAsString(rsEvent);
     }
 }
