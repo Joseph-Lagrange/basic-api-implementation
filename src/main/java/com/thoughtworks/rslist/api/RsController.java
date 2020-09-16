@@ -40,9 +40,13 @@ public class RsController {
 
     @GetMapping("/rs/list")
     public ResponseEntity getRsEventBetween(@RequestParam(required = false) Integer start,
-                                           @RequestParam(required = false) Integer end) {
+                                            @RequestParam(required = false) Integer end) {
         if (Objects.isNull(start) || Objects.isNull(end)) {
             return ResponseEntity.ok(rsList);
+        }
+        if (start <=  0 || start > rsList.size() ||
+                end <=  0 || end > rsList.size()) {
+            throw new RsEventNotValidException("invalid request param");
         }
         return ResponseEntity.ok(rsList.subList(start - 1, end));
     }
@@ -50,7 +54,9 @@ public class RsController {
     @PostMapping("/rs/event")
     public ResponseEntity addEvent(@RequestBody @Valid RsEvent rsEvent) throws JsonProcessingException {
         rsList.add(rsEvent);
-        return ResponseEntity.created(null).header("index", String.valueOf(rsList.size() - 1)).build();
+        return ResponseEntity.created(null)
+                .header("index", String.valueOf(rsList.size() - 1))
+                .build();
     }
 
     @PatchMapping("/rs/{index}")
@@ -84,5 +90,4 @@ public class RsController {
     private RsEvent getEventByIndex(int index) {
         return rsList.get(index - 1);
     }
-
 }

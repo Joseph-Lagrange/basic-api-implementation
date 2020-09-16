@@ -163,6 +163,10 @@ public class RsControllerTest {
         mockMvc.perform(get("/rs/0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error", is("invalid index")));
+
+        mockMvc.perform(get("/rs/4"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is("invalid index")));
     }
 
     @DirtiesContext
@@ -177,6 +181,22 @@ public class RsControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error", is("invalid param")));
+    }
+
+    @DirtiesContext
+    @Test
+    public void should_throw_rs_event_not_valid_request_param_exception() throws Exception {
+        mockMvc.perform(get("/rs/list?start=0&end=2"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is("invalid request param")));
+
+        mockMvc.perform(get("/rs/list?start=1&end=4"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is("invalid request param")));
+
+        mockMvc.perform(get("/rs/list?start=0&end=4"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is("invalid request param")));
     }
 
     private String rsEvent2Json(RsEvent rsEvent) throws JsonProcessingException {
