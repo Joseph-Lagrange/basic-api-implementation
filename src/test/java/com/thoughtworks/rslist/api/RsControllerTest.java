@@ -4,6 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thoughtworks.rslist.domain.RsEvent;
 import com.thoughtworks.rslist.domain.User;
+import com.thoughtworks.rslist.po.RsEventPO;
+import com.thoughtworks.rslist.po.UserPO;
+import com.thoughtworks.rslist.repository.RsEventRepository;
+import com.thoughtworks.rslist.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -12,7 +17,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -22,6 +31,12 @@ public class RsControllerTest {
 
     @Autowired
     MockMvc mockMvc;
+
+    @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    RsEventRepository rsEventRepository;
 
     @DirtiesContext
     @Test
@@ -99,7 +114,7 @@ public class RsControllerTest {
     @Test
     public void should_add_rs_event() throws Exception {
         User user = new User("Mike", "male", 20, "a@thoughtworks.com", "13386688553");
-        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", user);
+        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", 4);
         String jsonString = rsEvent2Json(rsEvent);
         mockMvc.perform(post("/rs/event").content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -125,9 +140,36 @@ public class RsControllerTest {
 
     @DirtiesContext
     @Test
+    public void should_add_rs_event_when_user_exist() throws Exception {
+        UserPO userPO = userRepository.save(UserPO.builder().userName("Mike").age(20).phone("13386688553")
+                .email("a@thoughtworks.com").gender("male").voteNum(20).build());
+        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", userPO.getId());
+        String jsonString = rsEvent2Json(rsEvent);
+        mockMvc.perform(post("/rs/event").content(jsonString)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated());
+        List<RsEventPO> rsEventPOs = rsEventRepository.findAll();
+        assertNotNull(rsEventPOs);
+        assertEquals(1, rsEventPOs.size());
+        assertEquals("ForthEvent", rsEventPOs.get(0).getEventName());
+        assertEquals("Entertainment", rsEventPOs.get(0).getKeyWord());
+        assertEquals(userPO.getId(), rsEventPOs.get(0).getUserPO().getId());
+    }
+
+    @DirtiesContext
+    @Test
+    public void should_add_rs_event_when_user_not_exist() throws Exception {
+        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", 100);
+        String jsonString = rsEvent2Json(rsEvent);
+        mockMvc.perform(post("/rs/event").content(jsonString)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @DirtiesContext
+    @Test
     public void should_modify_rs_event() throws Exception {
-        User user = new User("Mike", "male", 20, "a@b.com", "13386688553");
-        RsEvent rsEvent = new RsEvent("ThirdEvent", "Science", user);
+        RsEvent rsEvent = new RsEvent("ThirdEvent", "Science", 3);
         String jsonString = rsEvent2Json(rsEvent);
         mockMvc.perform(patch("/rs/3").content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -173,7 +215,7 @@ public class RsControllerTest {
     @Test
     public void should_throw_method_argument_not_valid_exception() throws Exception {
         User user = new User("LeBronRaymoneJames", "male", 20, "a@thoughtworks.com", "13386688553");
-        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", user);
+        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", 4);
         String jsonString = rsEvent2Json(rsEvent);
 
         mockMvc.perform(post("/rs/event")

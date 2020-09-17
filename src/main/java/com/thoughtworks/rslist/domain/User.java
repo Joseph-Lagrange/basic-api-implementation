@@ -9,7 +9,7 @@ public class User {
     @NotNull
     @Size(max = 8)
     @JsonProperty(value = "user_name")
-    private String name;
+    private String userName;
 
     @NotNull
     @JsonProperty(value = "user_gender")
@@ -32,20 +32,20 @@ public class User {
     @JsonProperty(value = "user_voteNum")
     private int voteNum = 10;
 
-    public User(String name, String gender, int age, String email, String phone) {
-        this.name = name;
+    public User(String userName, String gender, int age, String email, String phone) {
+        this.userName = userName;
         this.gender = gender;
         this.age = age;
         this.email = email;
         this.phone = phone;
     }
 
-    public String getName() {
-        return name;
+    public String getUserName() {
+        return userName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     public String getGender() {

@@ -2,34 +2,62 @@ package com.thoughtworks.rslist.api;
 
 import com.google.common.collect.Lists;
 import com.thoughtworks.rslist.domain.User;
+import com.thoughtworks.rslist.exception.RsEventNotValidException;
+import com.thoughtworks.rslist.po.UserPO;
+import com.thoughtworks.rslist.repository.RsEventRepository;
+import com.thoughtworks.rslist.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 @RestController
 public class UserController {
 
-    private List<User> userList = Lists.newArrayList();
+    @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    RsEventRepository rsEventRepository;
+
+    public static List<User> users = Lists.newArrayList();
 
     @PostMapping("/user")
-    public ResponseEntity addUser(@RequestBody @Valid User user) {
-        userList.add(user);
-        return ResponseEntity.created(null).header("index", String.valueOf(userList.size() - 1)).build();
+    public void register(@RequestBody @Valid User user) {
+        UserPO userPO = new UserPO();
+        userPO.setUserName(user.getUserName());
+        userPO.setGender(user.getGender());
+        userPO.setAge(user.getAge());
+        userPO.setEmail(user.getEmail());
+        userPO.setPhone(user.getPhone());
+        userPO.setVoteNum(user.getVoteNum());
+        userRepository.save(userPO);
     }
 
     @GetMapping("/user")
-    public ResponseEntity getUserList() {
-        return ResponseEntity.ok(userList);
+    public ResponseEntity getUser() {
+        return ResponseEntity.ok(users);
     }
 
     @GetMapping("/users")
-    public ResponseEntity getAllUsers() {
-        return ResponseEntity.ok(userList);
+    public ResponseEntity getUsers() {
+        return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/user/{id}")
+    public ResponseEntity getOneUser(@PathVariable int id) {
+        Optional<UserPO> userPO = userRepository.findById(id);
+        return ResponseEntity.ok(userPO.get());
+    }
+
+    @DeleteMapping("/user/{id}")
+    @Transactional
+    public ResponseEntity deleteUser(@PathVariable int id) {
+        userRepository.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 }

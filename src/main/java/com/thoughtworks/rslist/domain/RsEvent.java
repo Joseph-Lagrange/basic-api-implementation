@@ -3,11 +3,18 @@ package com.thoughtworks.rslist.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import java.io.Serializable;
 
-public class RsEvent {
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
+public class RsEvent implements Serializable {
 
     @NotNull
     private String eventName;
@@ -15,18 +22,8 @@ public class RsEvent {
     @NotNull
     private String keyWord;
 
-    @Valid
-    private User user;
-
-    public RsEvent(String eventName, String keyWord, User user) {
-        this.eventName = eventName;
-        this.keyWord = keyWord;
-        this.user = user;
-    }
-
-    public RsEvent() {
-
-    }
+    @NotNull
+    private int userId;
 
     public String getEventName() {
         return eventName;
@@ -44,13 +41,13 @@ public class RsEvent {
         this.keyWord = keyWord;
     }
 
-    @JsonIgnore
-    public User getUser() {
-        return user;
+    // @JsonIgnore
+    public int getUserId() {
+        return userId;
     }
 
-    @JsonProperty
-    public void setUser(User user) {
-        this.user = user;
+    // @JsonProperty
+    public void setUserId(int userId) {
+        this.userId = userId;
     }
 }

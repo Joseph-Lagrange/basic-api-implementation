@@ -5,32 +5,44 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.thoughtworks.rslist.domain.RsEvent;
 import com.thoughtworks.rslist.domain.User;
-import com.thoughtworks.rslist.exception.Error;
 import com.thoughtworks.rslist.exception.RsEventNotValidException;
+import com.thoughtworks.rslist.po.RsEventPO;
+import com.thoughtworks.rslist.po.UserPO;
+import com.thoughtworks.rslist.repository.RsEventRepository;
+import com.thoughtworks.rslist.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.validation.Valid;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+
+import static com.thoughtworks.rslist.api.UserController.users;
 
 @RestController
+@Validated
 public class RsController {
+
+    @Autowired
+    RsEventRepository rsEventRepository;
+
+    @Autowired
+    UserRepository userRepository;
 
     private List<RsEvent> rsList = initRsEventList();
 
-    private List<User> userList = Lists.newArrayList();
-
     private List<RsEvent> initRsEventList() {
-        List<RsEvent> rsEventList = new ArrayList<>();
+        List<RsEvent> rsEventList = Lists.newArrayList();
         User user = new User("Mike", "male", 20, "a@thoughtworks.com", "13386688553");
-        rsEventList.add(new RsEvent("FirstEvent", "Economy", user));
-        rsEventList.add(new RsEvent("SecondEvent", "Politics", user));
-        rsEventList.add(new RsEvent("ThirdEvent", "Cultural", user));
+        rsEventList.add(new RsEvent("FirstEvent", "Economy", 1));
+        rsEventList.add(new RsEvent("SecondEvent", "Politics", 2));
+        rsEventList.add(new RsEvent("ThirdEvent", "Cultural", 3));
+        users.add(user);
         return rsEventList;
     }
 
@@ -56,18 +68,19 @@ public class RsController {
     }
 
     @PostMapping("/rs/event")
-    public ResponseEntity addEvent(@RequestBody @Valid RsEvent rsEvent, RedirectAttributes attr) throws JsonProcessingException {
-        rsList.add(rsEvent);
-        if (isUserNameExist(rsEvent.getUser().getName())) {
-            userList.add(rsEvent.getUser());
+    public ResponseEntity addEvent(@RequestBody @Valid RsEvent rsEvent) throws JsonProcessingException {
+        Optional<UserPO> userPO = userRepository.findById(rsEvent.getUserId());
+        if (!userPO.isPresent()) {
+            return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.created(null)
-                .header("index", String.valueOf(rsList.size() - 1))
-                .build();
+        RsEventPO rsEventPO = RsEventPO.builder().keyWord(rsEvent.getKeyWord()).eventName(rsEvent.getEventName())
+                .userPO(userPO.get()).build();
+        rsEventRepository.save(rsEventPO);
+        return ResponseEntity.created(null).build();
     }
 
     private boolean isUserNameExist(String name) {
-        return userList.stream().anyMatch(v -> v.getName().equals(name));
+        return users.stream().anyMatch(v -> v.getUserName().equals(name));
     }
 
     @PatchMapping("/rs/{index}")
@@ -101,4 +114,5 @@ public class RsController {
     private RsEvent getEventByIndex(int index) {
         return rsList.get(index - 1);
     }
+
 }
