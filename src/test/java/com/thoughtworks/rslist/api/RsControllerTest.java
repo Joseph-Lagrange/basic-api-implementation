@@ -4,10 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thoughtworks.rslist.domain.RsEvent;
 import com.thoughtworks.rslist.domain.User;
+import com.thoughtworks.rslist.domain.Vote;
 import com.thoughtworks.rslist.po.RsEventPO;
 import com.thoughtworks.rslist.po.UserPO;
 import com.thoughtworks.rslist.repository.RsEventRepository;
 import com.thoughtworks.rslist.repository.UserRepository;
+import com.thoughtworks.rslist.repository.VoteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,13 +19,16 @@ import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -38,6 +43,34 @@ public class RsControllerTest {
     @Autowired
     RsEventRepository rsEventRepository;
 
+    @Autowired
+    VoteRepository voteRepository;
+
+    UserPO userPO;
+
+    RsEventPO rsEventPO;
+
+    ObjectMapper objectMapper;
+
+    Date localDataTime;
+
+    @BeforeEach
+    void setUp() {
+        userRepository.deleteAll();
+        rsEventRepository.deleteAll();
+        voteRepository.deleteAll();
+        userPO = userRepository.save(UserPO.builder().userName("Mike").age(20).phone("13386688553")
+                .email("mike@thoughtworks.com").gender("male").voteNum(20).build());
+        rsEventRepository.save(RsEventPO.builder().eventName("FirstEvent").keyWord("Economy")
+                .voteNum(10).userPO(userPO).build());
+        rsEventRepository.save(RsEventPO.builder().eventName("SecondEvent").keyWord("Politics")
+                .voteNum(10).userPO(userPO).build());
+        rsEventPO = rsEventRepository.save(RsEventPO.builder().eventName("ThirdEvent").keyWord("Cultural")
+                .voteNum(10).userPO(userPO).build());
+        objectMapper = new ObjectMapper();
+        localDataTime = new Date();
+    }
+
     @DirtiesContext
     @Test
     public void should_get_rs_event_list() throws Exception {
@@ -45,12 +78,15 @@ public class RsControllerTest {
                 .andExpect(jsonPath("$", hasSize(3)))
                 .andExpect(jsonPath("$[0].eventName", is("FirstEvent")))
                 .andExpect(jsonPath("$[0].keyWord", is("Economy")))
+                .andExpect(jsonPath("$[0].voteNum", is(10)))
                 .andExpect(jsonPath("$[0]", not(hasKey("user"))))
                 .andExpect(jsonPath("$[1].eventName", is("SecondEvent")))
                 .andExpect(jsonPath("$[1].keyWord", is("Politics")))
+                .andExpect(jsonPath("$[1].voteNum", is(10)))
                 .andExpect(jsonPath("$[1]", not(hasKey("user"))))
                 .andExpect(jsonPath("$[2].eventName", is("ThirdEvent")))
                 .andExpect(jsonPath("$[2].keyWord", is("Cultural")))
+                .andExpect(jsonPath("$[2].voteNum", is(10)))
                 .andExpect(jsonPath("$[2]", not(hasKey("user"))))
                 .andExpect(status().isOk());
     }
@@ -113,13 +149,11 @@ public class RsControllerTest {
     @DirtiesContext
     @Test
     public void should_add_rs_event() throws Exception {
-        User user = new User("Mike", "male", 20, "a@thoughtworks.com", "13386688553");
-        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", 4);
+        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", userPO.getId(), 0);
         String jsonString = rsEvent2Json(rsEvent);
         mockMvc.perform(post("/rs/event").content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isCreated())
-                .andExpect(header().stringValues("index", "3"));
+                .andExpect(status().isCreated());
 
         mockMvc.perform(get("/rs/list"))
                 .andExpect(jsonPath("$", hasSize(4)))
@@ -141,25 +175,22 @@ public class RsControllerTest {
     @DirtiesContext
     @Test
     public void should_add_rs_event_when_user_exist() throws Exception {
-        UserPO userPO = userRepository.save(UserPO.builder().userName("Mike").age(20).phone("13386688553")
-                .email("a@thoughtworks.com").gender("male").voteNum(20).build());
-        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", userPO.getId());
+        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", userPO.getId(), 0);
         String jsonString = rsEvent2Json(rsEvent);
         mockMvc.perform(post("/rs/event").content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated());
-        List<RsEventPO> rsEventPOs = rsEventRepository.findAll();
-        assertNotNull(rsEventPOs);
-        assertEquals(1, rsEventPOs.size());
-        assertEquals("ForthEvent", rsEventPOs.get(0).getEventName());
-        assertEquals("Entertainment", rsEventPOs.get(0).getKeyWord());
-        assertEquals(userPO.getId(), rsEventPOs.get(0).getUserPO().getId());
+
+        mockMvc.perform(get("/rs/4"))
+                .andExpect(jsonPath("$.eventName", is("ForthEvent")))
+                .andExpect(jsonPath("$.keyWord", is("Entertainment")))
+                .andExpect(status().isOk());
     }
 
     @DirtiesContext
     @Test
     public void should_add_rs_event_when_user_not_exist() throws Exception {
-        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", 100);
+        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", 100, 0);
         String jsonString = rsEvent2Json(rsEvent);
         mockMvc.perform(post("/rs/event").content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -168,12 +199,27 @@ public class RsControllerTest {
 
     @DirtiesContext
     @Test
-    public void should_modify_rs_event() throws Exception {
-        RsEvent rsEvent = new RsEvent("ThirdEvent", "Science", 3);
-        String jsonString = rsEvent2Json(rsEvent);
-        mockMvc.perform(patch("/rs/3").content(jsonString)
+    public void should_not_update_rs_event_when_user_id_not_match() throws Exception {
+        RsEvent updateRsEvent = new RsEvent("ThirdEvent", "Science", 100, 0);
+        String jsonString = rsEvent2Json(updateRsEvent);
+        mockMvc.perform(patch("/rs/" + rsEventPO.getId()).content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/rs/3"))
+                .andExpect(jsonPath("$.eventName", is("ThirdEvent")))
+                .andExpect(jsonPath("$.keyWord", is("Cultural")))
                 .andExpect(status().isOk());
+    }
+
+    @DirtiesContext
+    @Test
+    public void should_update_rs_event_when_user_id_match() throws Exception {
+        RsEvent updateRsEvent = new RsEvent("ThirdEvent", "Science", userPO.getId(), 0);
+        String jsonString = rsEvent2Json(updateRsEvent);
+        mockMvc.perform(patch("/rs/" + rsEventPO.getId()).content(jsonString)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated());
 
         mockMvc.perform(get("/rs/3"))
                 .andExpect(jsonPath("$.eventName", is("ThirdEvent")))
@@ -184,7 +230,7 @@ public class RsControllerTest {
     @DirtiesContext
     @Test
     public void should_delete_rs_event() throws Exception {
-        mockMvc.perform(delete("/rs/2")
+        mockMvc.perform(delete("/rs/" + rsEventPO.getId())
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
@@ -193,10 +239,30 @@ public class RsControllerTest {
                 .andExpect(jsonPath("$[0].eventName", is("FirstEvent")))
                 .andExpect(jsonPath("$[0].keyWord", is("Economy")))
                 .andExpect(jsonPath("$[0]", not(hasKey("user"))))
-                .andExpect(jsonPath("$[1].eventName", is("ThirdEvent")))
-                .andExpect(jsonPath("$[1].keyWord", is("Cultural")))
+                .andExpect(jsonPath("$[1].eventName", is("SecondEvent")))
+                .andExpect(jsonPath("$[1].keyWord", is("Politics")))
                 .andExpect(jsonPath("$[1]", not(hasKey("user"))))
                 .andExpect(status().isOk());
+    }
+
+    @DirtiesContext
+    @Test
+    public void should_vote_event_when_vote_num_is_enough() throws Exception {
+        Vote vote = Vote.builder().userId(userPO.getId()).rsEventId(rsEventPO.getId()).time(localDataTime).voteNum(10).build();
+        String jsonString = objectMapper.writeValueAsString(vote);
+        mockMvc.perform(post("/rs/vote/" + rsEventPO.getId()).content(jsonString)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @DirtiesContext
+    @Test
+    public void should_not_vote_event_when_vote_num_is_not_enough() throws Exception {
+        Vote vote = Vote.builder().userId(userPO.getId()).rsEventId(rsEventPO.getId()).time(localDataTime).voteNum(25).build();
+        String jsonString = objectMapper.writeValueAsString(vote);
+        mockMvc.perform(post("/rs/vote/" + rsEventPO.getId()).content(jsonString)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
     }
 
     @DirtiesContext
@@ -214,8 +280,7 @@ public class RsControllerTest {
     @DirtiesContext
     @Test
     public void should_throw_method_argument_not_valid_exception() throws Exception {
-        User user = new User("LeBronRaymoneJames", "male", 20, "a@thoughtworks.com", "13386688553");
-        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", 4);
+        RsEvent rsEvent = new RsEvent();
         String jsonString = rsEvent2Json(rsEvent);
 
         mockMvc.perform(post("/rs/event")

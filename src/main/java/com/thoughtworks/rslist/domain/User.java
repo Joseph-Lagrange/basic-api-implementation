@@ -87,4 +87,5 @@ public class User {
     public void setVoteNum(int voteNum) {
         this.voteNum = voteNum;
     }
+
 }

@@ -9,8 +9,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import java.util.Arrays;
-
 @ControllerAdvice
 public class RsEventHandler {
 
@@ -29,5 +27,4 @@ public class RsEventHandler {
         logger.error(errorMessage);
         return ResponseEntity.badRequest().body(error);
     }
-
 }

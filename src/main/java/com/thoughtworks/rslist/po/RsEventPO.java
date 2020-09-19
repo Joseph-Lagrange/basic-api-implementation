@@ -1,6 +1,5 @@
 package com.thoughtworks.rslist.po;
 
-import com.thoughtworks.rslist.domain.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,6 +22,8 @@ public class RsEventPO {
     private String eventName;
 
     private String keyWord;
+
+    private int voteNum;
 
     @ManyToOne
     private UserPO userPO;

@@ -5,24 +5,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.thoughtworks.rslist.domain.RsEvent;
 import com.thoughtworks.rslist.domain.User;
+import com.thoughtworks.rslist.domain.Vote;
 import com.thoughtworks.rslist.exception.RsEventNotValidException;
 import com.thoughtworks.rslist.po.RsEventPO;
 import com.thoughtworks.rslist.po.UserPO;
+import com.thoughtworks.rslist.po.VotePO;
 import com.thoughtworks.rslist.repository.RsEventRepository;
 import com.thoughtworks.rslist.repository.UserRepository;
+import com.thoughtworks.rslist.repository.VoteRepository;
+import com.thoughtworks.rslist.service.RsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.validation.Valid;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-
-import static com.thoughtworks.rslist.api.UserController.users;
+import java.util.stream.Collectors;
 
 @RestController
 @Validated
@@ -34,85 +35,75 @@ public class RsController {
     @Autowired
     UserRepository userRepository;
 
-    private List<RsEvent> rsList = initRsEventList();
+    @Autowired
+    VoteRepository voteRepository;
 
-    private List<RsEvent> initRsEventList() {
-        List<RsEvent> rsEventList = Lists.newArrayList();
-        User user = new User("Mike", "male", 20, "a@thoughtworks.com", "13386688553");
-        rsEventList.add(new RsEvent("FirstEvent", "Economy", 1));
-        rsEventList.add(new RsEvent("SecondEvent", "Politics", 2));
-        rsEventList.add(new RsEvent("ThirdEvent", "Cultural", 3));
-        users.add(user);
-        return rsEventList;
-    }
+    @Autowired
+    RsService rsService;
 
     @GetMapping("/rs/{index}")
     public ResponseEntity getOneRsEvent(@PathVariable int index) {
-        if (index <= 0 || index > rsList.size()) {
+        List<RsEvent> rsEvents = rsService.findAll();
+        if (index <= 0 || index > rsEvents.size()) {
             throw new RsEventNotValidException("invalid index");
         }
-        return ResponseEntity.ok(rsList.get(index - 1));
+        return ResponseEntity.ok(rsEvents.get(index - 1));
     }
 
     @GetMapping("/rs/list")
     public ResponseEntity getRsEventBetween(@RequestParam(required = false) Integer start,
                                             @RequestParam(required = false) Integer end) {
+        List<RsEvent> rsEvents = rsService.findAll();
         if (Objects.isNull(start) || Objects.isNull(end)) {
-            return ResponseEntity.ok(rsList);
+            return ResponseEntity.ok(rsEvents);
         }
-        if (start <=  0 || start > rsList.size() ||
-                end <=  0 || end > rsList.size()) {
+        if (start <=  0 || start > rsEvents.size() ||
+                end <=  0 || end > rsEvents.size()) {
             throw new RsEventNotValidException("invalid request param");
         }
-        return ResponseEntity.ok(rsList.subList(start - 1, end));
+        return ResponseEntity.ok(rsEvents.subList(start - 1, end));
     }
 
     @PostMapping("/rs/event")
-    public ResponseEntity addEvent(@RequestBody @Valid RsEvent rsEvent) throws JsonProcessingException {
-        Optional<UserPO> userPO = userRepository.findById(rsEvent.getUserId());
-        if (!userPO.isPresent()) {
+    public ResponseEntity addEvent(@RequestBody @Valid RsEvent rsEvent) {
+        Optional<UserPO> optional = userRepository.findById(rsEvent.getUserId());
+        if (!optional.isPresent()) {
             return ResponseEntity.badRequest().build();
         }
         RsEventPO rsEventPO = RsEventPO.builder().keyWord(rsEvent.getKeyWord()).eventName(rsEvent.getEventName())
-                .userPO(userPO.get()).build();
+                .userPO(optional.get()).build();
         rsEventRepository.save(rsEventPO);
         return ResponseEntity.created(null).build();
     }
 
-    private boolean isUserNameExist(String name) {
-        return users.stream().anyMatch(v -> v.getUserName().equals(name));
-    }
-
-    @PatchMapping("/rs/{index}")
-    public ResponseEntity modifyEvent(@PathVariable int index, @RequestBody RsEvent rsEvent) throws JsonProcessingException {
-        RsEvent modifyEvent = getEventByIndex(index);
-        if (Objects.nonNull(modifyEvent)) {
-            if (Objects.nonNull(rsEvent.getEventName())) {
-                modifyEvent.setEventName(rsEvent.getEventName());
-            }
+    @PatchMapping("/rs/{rsEventId}")
+    public ResponseEntity updateEvent(@PathVariable int rsEventId, @RequestBody RsEvent rsEvent) {
+        Optional<RsEventPO> optional = rsEventRepository.findById(rsEventId);
+        if (!optional.isPresent()) {
+            return ResponseEntity.badRequest().build();
+        }
+        RsEventPO rsEventPO = optional.get();
+        if (rsEventPO.getUserPO().getId() == rsEvent.getUserId()) {
             if (Objects.nonNull(rsEvent.getKeyWord())) {
-                modifyEvent.setKeyWord(rsEvent.getKeyWord());
+                rsEventPO.setKeyWord(rsEvent.getKeyWord());
             }
+            if (Objects.nonNull(rsEvent.getEventName())) {
+                rsEventPO.setEventName(rsEvent.getEventName());
+            }
+            rsEventRepository.save(rsEventPO);
+        } else {
+            return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.created(null).build();
     }
 
-    @DeleteMapping("/rs/{index}")
-    public ResponseEntity deleteEvent(@PathVariable int index) {
-        if (index <= 0 || index > rsList.size()) {
-            throw new RsEventNotValidException("invalid index");
-        }
-        rsList.remove(index - 1);
-        return ResponseEntity.created(null).build();
+    @DeleteMapping("/rs/{rsEventId}")
+    public ResponseEntity deleteEvent(@PathVariable int rsEventId) {
+        return rsService.deleteById(rsEventId);
     }
 
-    private RsEvent json2RsEvent(String rsEvent) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(rsEvent, RsEvent.class);
+    @PostMapping("/rs/vote/{rsEventId}")
+    public ResponseEntity voteEvent(@PathVariable int rsEventId, @RequestBody Vote vote) {
+        return rsService.vote(vote, rsEventId);
     }
-
-    private RsEvent getEventByIndex(int index) {
-        return rsList.get(index - 1);
-    }
-
 }
