@@ -77,4 +77,29 @@ public class VoteControllerTest {
                 .andExpect(jsonPath("$[4].voteNum", is(5)));
     }
 
+    @Test
+    public void should_get_vote_record_within_time() throws Exception {
+        for (int i = 0; i < 8; i++) {
+            VotePO votePO = VotePO.builder().user(userPO).rsEvent(rsEventPO)
+                    .localDateTime(new Date())
+                    .num(i + 1)
+                    .build();
+            voteRepository.save(votePO);
+        }
+
+        mockMvc.perform(get("/voteRecords")
+                .param("startTimeString", "2020-09-18")
+                .param("endTimeString", "2020-09-20"))
+                .andExpect(jsonPath("$", hasSize(8)))
+                .andExpect(jsonPath("$[0].userId", is(userPO.getId())))
+                .andExpect(jsonPath("$[0].rsEventId", is(rsEventPO.getId())))
+                .andExpect(jsonPath("$[0].voteNum", is(1)))
+                .andExpect(jsonPath("$[1].voteNum", is(2)))
+                .andExpect(jsonPath("$[2].voteNum", is(3)))
+                .andExpect(jsonPath("$[3].voteNum", is(4)))
+                .andExpect(jsonPath("$[4].voteNum", is(5)))
+                .andExpect(jsonPath("$[5].voteNum", is(6)))
+                .andExpect(jsonPath("$[6].voteNum", is(7)))
+                .andExpect(jsonPath("$[7].voteNum", is(8)));
+    }
 }

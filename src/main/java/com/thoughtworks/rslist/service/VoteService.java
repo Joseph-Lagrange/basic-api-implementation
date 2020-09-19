@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,6 +31,16 @@ public class VoteService {
         Pageable pageable = PageRequest.of(pageIndex - 1, 5);
         return ResponseEntity.ok(
                 voteRepository.findAllByUserIdAndRsEventId(userId, rsEventId, pageable).stream().map(
+                        item -> Vote.builder().userId(item.getUser().getId())
+                                .time(item.getLocalDateTime())
+                                .rsEventId(item.getRsEvent().getId())
+                                .voteNum(item.getNum()).build()
+                ).collect(Collectors.toList()));
+    }
+
+    public ResponseEntity<List<Vote>> findAllByTime(Date startTime, Date endTime) {
+        return ResponseEntity.ok(
+                voteRepository.findAllByTime(startTime, endTime).stream().map(
                         item -> Vote.builder().userId(item.getUser().getId())
                                 .time(item.getLocalDateTime())
                                 .rsEventId(item.getRsEvent().getId())
