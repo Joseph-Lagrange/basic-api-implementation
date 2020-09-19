@@ -6,16 +6,17 @@ import com.thoughtworks.rslist.repository.RsEventRepository;
 import com.thoughtworks.rslist.repository.UserRepository;
 import com.thoughtworks.rslist.repository.VoteRepository;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
-@Service
+
 public class UserService {
 
     final RsEventRepository rsEventRepository;
+
     final UserRepository userRepository;
+
     final VoteRepository voteRepository;
 
     public UserService(RsEventRepository rsEventRepository, UserRepository userRepository, VoteRepository voteRepository) {
@@ -46,8 +47,7 @@ public class UserService {
         return ResponseEntity.ok().build();
     }
 
-    public ResponseEntity findById(int id) {
-        Optional<UserPO> userPO = userRepository.findById(id);
-        return ResponseEntity.ok(userPO.get());
+    public Optional<UserPO> findById(int id) {
+        return userRepository.findById(id);
     }
 }
