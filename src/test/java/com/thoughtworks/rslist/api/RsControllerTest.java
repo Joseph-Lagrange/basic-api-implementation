@@ -1,9 +1,7 @@
 package com.thoughtworks.rslist.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thoughtworks.rslist.domain.RsEvent;
-import com.thoughtworks.rslist.domain.User;
 import com.thoughtworks.rslist.domain.Vote;
 import com.thoughtworks.rslist.po.RsEventPO;
 import com.thoughtworks.rslist.po.UserPO;
@@ -19,13 +17,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
 import java.util.Date;
-import java.util.List;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -62,11 +56,11 @@ public class RsControllerTest {
         userPO = userRepository.save(UserPO.builder().userName("Mike").age(20).phone("13386688553")
                 .email("mike@thoughtworks.com").gender("male").voteNum(20).build());
         rsEventRepository.save(RsEventPO.builder().eventName("FirstEvent").keyWord("Economy")
-                .voteNum(10).userPO(userPO).build());
+                .voteNum(10).userPO(userPO).rankNum(1).build());
         rsEventRepository.save(RsEventPO.builder().eventName("SecondEvent").keyWord("Politics")
-                .voteNum(10).userPO(userPO).build());
+                .voteNum(10).userPO(userPO).rankNum(2).build());
         rsEventPO = rsEventRepository.save(RsEventPO.builder().eventName("ThirdEvent").keyWord("Cultural")
-                .voteNum(10).userPO(userPO).build());
+                .voteNum(10).userPO(userPO).rankNum(3).build());
         objectMapper = new ObjectMapper();
         localDataTime = new Date();
     }
@@ -74,7 +68,7 @@ public class RsControllerTest {
     @DirtiesContext
     @Test
     public void should_get_rs_event_list() throws Exception {
-        mockMvc.perform(get("/rs/list"))
+        mockMvc.perform(get("/rs/events"))
                 .andExpect(jsonPath("$", hasSize(3)))
                 .andExpect(jsonPath("$[0].eventName", is("FirstEvent")))
                 .andExpect(jsonPath("$[0].keyWord", is("Economy")))
@@ -114,7 +108,7 @@ public class RsControllerTest {
     @DirtiesContext
     @Test
     public void should_rs_event_between() throws Exception {
-        mockMvc.perform(get("/rs/list?start=1&end=2"))
+        mockMvc.perform(get("/rs/events?start=1&end=2"))
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].eventName", is("FirstEvent")))
                 .andExpect(jsonPath("$[0].keyWord", is("Economy")))
@@ -123,7 +117,7 @@ public class RsControllerTest {
                 .andExpect(jsonPath("$[1].keyWord", is("Politics")))
                 .andExpect(jsonPath("$[1]", not(hasKey("user"))))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/rs/list?start=2&end=3"))
+        mockMvc.perform(get("/rs/events?start=2&end=3"))
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].eventName", is("SecondEvent")))
                 .andExpect(jsonPath("$[0].keyWord", is("Politics")))
@@ -132,7 +126,7 @@ public class RsControllerTest {
                 .andExpect(jsonPath("$[1].keyWord", is("Cultural")))
                 .andExpect(jsonPath("$[1]", not(hasKey("user"))))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/rs/list?start=1&end=3"))
+        mockMvc.perform(get("/rs/events?start=1&end=3"))
                 .andExpect(jsonPath("$", hasSize(3)))
                 .andExpect(jsonPath("$[0].eventName", is("FirstEvent")))
                 .andExpect(jsonPath("$[0].keyWord", is("Economy")))
@@ -149,13 +143,15 @@ public class RsControllerTest {
     @DirtiesContext
     @Test
     public void should_add_rs_event() throws Exception {
-        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", userPO.getId(), 0);
-        String jsonString = rsEvent2Json(rsEvent);
+        RsEvent rsEvent = RsEvent.builder().eventName("ForthEvent").keyWord("Entertainment")
+                .userId(userPO.getId()).voteNum(0).build();
+
+        String jsonString = objectMapper.writeValueAsString(rsEvent);
         mockMvc.perform(post("/rs/event").content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/rs/list"))
+        mockMvc.perform(get("/rs/events"))
                 .andExpect(jsonPath("$", hasSize(4)))
                 .andExpect(jsonPath("$[0].eventName", is("FirstEvent")))
                 .andExpect(jsonPath("$[0].keyWord", is("Economy")))
@@ -175,8 +171,10 @@ public class RsControllerTest {
     @DirtiesContext
     @Test
     public void should_add_rs_event_when_user_exist() throws Exception {
-        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", userPO.getId(), 0);
-        String jsonString = rsEvent2Json(rsEvent);
+        RsEvent rsEvent = RsEvent.builder().eventName("ForthEvent").keyWord("Entertainment")
+                .userId(userPO.getId()).voteNum(0).build();
+
+        String jsonString = objectMapper.writeValueAsString(rsEvent);
         mockMvc.perform(post("/rs/event").content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated());
@@ -190,8 +188,10 @@ public class RsControllerTest {
     @DirtiesContext
     @Test
     public void should_add_rs_event_when_user_not_exist() throws Exception {
-        RsEvent rsEvent = new RsEvent("ForthEvent", "Entertainment", 100, 0);
-        String jsonString = rsEvent2Json(rsEvent);
+        RsEvent rsEvent = RsEvent.builder().eventName("ForthEvent").keyWord("Entertainment")
+                .userId(100).voteNum(0).build();
+
+        String jsonString = objectMapper.writeValueAsString(rsEvent);
         mockMvc.perform(post("/rs/event").content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
@@ -200,8 +200,10 @@ public class RsControllerTest {
     @DirtiesContext
     @Test
     public void should_not_update_rs_event_when_user_id_not_match() throws Exception {
-        RsEvent updateRsEvent = new RsEvent("ThirdEvent", "Science", 100, 0);
-        String jsonString = rsEvent2Json(updateRsEvent);
+        RsEvent updateRsEvent = RsEvent.builder().eventName("ThirdEvent").keyWord("Science")
+                .userId(100).voteNum(0).build();
+
+        String jsonString = objectMapper.writeValueAsString(updateRsEvent);
         mockMvc.perform(patch("/rs/" + rsEventPO.getId()).content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
@@ -215,8 +217,10 @@ public class RsControllerTest {
     @DirtiesContext
     @Test
     public void should_update_rs_event_when_user_id_match() throws Exception {
-        RsEvent updateRsEvent = new RsEvent("ThirdEvent", "Science", userPO.getId(), 0);
-        String jsonString = rsEvent2Json(updateRsEvent);
+        RsEvent updateRsEvent = RsEvent.builder().eventName("ThirdEvent").keyWord("Science")
+                .userId(userPO.getId()).voteNum(0).build();
+
+        String jsonString = objectMapper.writeValueAsString(updateRsEvent);
         mockMvc.perform(patch("/rs/" + rsEventPO.getId()).content(jsonString)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated());
@@ -234,7 +238,7 @@ public class RsControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/rs/list"))
+        mockMvc.perform(get("/rs/events"))
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].eventName", is("FirstEvent")))
                 .andExpect(jsonPath("$[0].keyWord", is("Economy")))
@@ -267,6 +271,76 @@ public class RsControllerTest {
 
     @DirtiesContext
     @Test
+    public void should_buy_event_when_rank_num_is_exist() throws Exception {
+        RsEvent rsEvent = RsEvent.builder().eventName("ForthEvent").keyWord("Entertainment")
+                .userId(userPO.getId()).voteNum(0).build();
+
+        String jsonString = objectMapper.writeValueAsString(rsEvent);
+        mockMvc.perform(post("/rs/buy")
+                .param("amount", String.valueOf(100))
+                .param("rank", String.valueOf(1))
+                .content(jsonString)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/rs/events"))
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[0].eventName", is("ForthEvent")))
+                .andExpect(jsonPath("$[0].keyWord", is("Entertainment")))
+                .andExpect(jsonPath("$[0].amount", is(100)))
+                .andExpect(jsonPath("$[0].rank", is(1)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void should_not_buy_event_when_rank_num_is_not_exist() throws Exception {
+        RsEvent rsEvent = RsEvent.builder().eventName("ForthEvent").keyWord("Entertainment")
+                .userId(userPO.getId()).voteNum(0).build();
+
+        String jsonString = objectMapper.writeValueAsString(rsEvent);
+        mockMvc.perform(post("/rs/buy")
+                .param("amount", String.valueOf(100))
+                .param("rank", String.valueOf(7))
+                .content(jsonString)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/rs/events"))
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[2].eventName", is("ThirdEvent")))
+                .andExpect(jsonPath("$[2].keyword", is("Cultural")))
+                .andExpect(jsonPath("$[2].amount", is(0)))
+                .andExpect(jsonPath("$[2].rank", is(3)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void should_not_buy_event_when_amount_is_lower() throws Exception {
+        RsEvent rsEvent = RsEvent.builder().eventName("ForthEvent").keyWord("Entertainment")
+                .userId(userPO.getId()).voteNum(0).build();
+
+        String jsonString = objectMapper.writeValueAsString(rsEvent);
+        mockMvc.perform(post("/rs/buy")
+                .param("amount", String.valueOf(100))
+                .param("rank", String.valueOf(1))
+                .content(jsonString)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        rsEvent = RsEvent.builder().eventName("FifthEvent").keyWord("Science")
+                .userId(userPO.getId()).voteNum(0).build();
+
+        jsonString = objectMapper.writeValueAsString(rsEvent);
+        mockMvc.perform(post("/rs/buy")
+                .param("amount", String.valueOf(50))
+                .param("rank", String.valueOf(1))
+                .content(jsonString)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @DirtiesContext
+    @Test
     public void should_throw_rs_event_not_valid_exception() throws Exception {
         mockMvc.perform(get("/rs/0"))
                 .andExpect(status().isBadRequest())
@@ -281,7 +355,7 @@ public class RsControllerTest {
     @Test
     public void should_throw_method_argument_not_valid_exception() throws Exception {
         RsEvent rsEvent = new RsEvent();
-        String jsonString = rsEvent2Json(rsEvent);
+        String jsonString = objectMapper.writeValueAsString(rsEvent);
 
         mockMvc.perform(post("/rs/event")
                 .content(jsonString)
@@ -293,21 +367,16 @@ public class RsControllerTest {
     @DirtiesContext
     @Test
     public void should_throw_rs_event_not_valid_request_param_exception() throws Exception {
-        mockMvc.perform(get("/rs/list?start=0&end=2"))
+        mockMvc.perform(get("/rs/events?start=0&end=2"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error", is("invalid request param")));
 
-        mockMvc.perform(get("/rs/list?start=1&end=4"))
+        mockMvc.perform(get("/rs/events?start=1&end=4"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error", is("invalid request param")));
 
-        mockMvc.perform(get("/rs/list?start=0&end=4"))
+        mockMvc.perform(get("/rs/events?start=0&end=4"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error", is("invalid request param")));
-    }
-
-    private String rsEvent2Json(RsEvent rsEvent) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.writeValueAsString(rsEvent);
     }
 }

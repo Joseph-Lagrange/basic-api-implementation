@@ -7,17 +7,17 @@ import com.thoughtworks.rslist.repository.VoteRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Service
 public class VoteService {
 
     final RsEventRepository rsEventRepository;
+
     final UserRepository userRepository;
+
     final VoteRepository voteRepository;
 
     public VoteService(RsEventRepository rsEventRepository, UserRepository userRepository, VoteRepository voteRepository) {
@@ -25,7 +25,6 @@ public class VoteService {
         this.userRepository = userRepository;
         this.voteRepository = voteRepository;
     }
-
 
     public ResponseEntity<List<Vote>> findAllByUserIdAndRsEventId(int userId, int rsEventId, int pageIndex) {
         Pageable pageable = PageRequest.of(pageIndex - 1, 5);

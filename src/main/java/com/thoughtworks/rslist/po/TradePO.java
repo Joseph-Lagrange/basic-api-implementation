@@ -5,24 +5,21 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.*;
-import java.util.Date;
-
-@Data
 @Entity
+@Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "vote")
-public class VotePO {
+@Table(name = "trade")
+public class TradePO {
 
     @Id
     @GeneratedValue
     private int id;
 
-    private int num;
+    private int amount;
 
-    private Date localDateTime;
+    private int rankNum;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -31,5 +28,4 @@ public class VotePO {
     @ManyToOne
     @JoinColumn(name = "rs_event_id")
     private RsEventPO rsEvent;
-
 }

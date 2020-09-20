@@ -27,37 +27,8 @@ public class RsEvent implements Serializable {
     @NotNull
     private int voteNum;
 
-    public String getEventName() {
-        return eventName;
-    }
+    private int rank;
 
-    public void setEventName(String eventName) {
-        this.eventName = eventName;
-    }
+    private int amount;
 
-    public String getKeyWord() {
-        return keyWord;
-    }
-
-    public void setKeyWord(String keyWord) {
-        this.keyWord = keyWord;
-    }
-
-    public int getVoteNum() {
-        return voteNum;
-    }
-
-    public void setVoteNum(int voteNum) {
-        this.voteNum = voteNum;
-    }
-
-    // @JsonIgnore
-    public int getUserId() {
-        return userId;
-    }
-
-    // @JsonProperty
-    public void setUserId(int userId) {
-        this.userId = userId;
-    }
 }

@@ -38,15 +38,15 @@ public class RsController {
         return ResponseEntity.ok(rsEvents.get(index - 1));
     }
 
-    @GetMapping("/rs/list")
+    @GetMapping("/rs/events")
     public ResponseEntity getRsEventBetween(@RequestParam(required = false) Integer start,
                                             @RequestParam(required = false) Integer end) {
         List<RsEvent> rsEvents = rsService.findAll();
         if (Objects.isNull(start) || Objects.isNull(end)) {
             return ResponseEntity.ok(rsEvents);
         }
-        if (start <=  0 || start > rsEvents.size() ||
-                end <=  0 || end > rsEvents.size()) {
+        if (start <= 0 || start > rsEvents.size() ||
+                end <= 0 || end > rsEvents.size()) {
             throw new RsEventNotValidException("invalid request param");
         }
         return ResponseEntity.ok(rsEvents.subList(start - 1, end));
@@ -58,9 +58,7 @@ public class RsController {
         if (!optional.isPresent()) {
             return ResponseEntity.badRequest().build();
         }
-        RsEventPO rsEventPO = RsEventPO.builder().keyWord(rsEvent.getKeyWord()).eventName(rsEvent.getEventName())
-                .userPO(optional.get()).build();
-        rsService.save(rsEventPO);
+        rsService.addEvent(rsEvent, optional);
         return ResponseEntity.created(null).build();
     }
 
@@ -94,4 +92,11 @@ public class RsController {
     public ResponseEntity voteEvent(@PathVariable int rsEventId, @RequestBody Vote vote) {
         return rsService.vote(vote, rsEventId);
     }
+
+    @PostMapping("/rs/buy")
+    public ResponseEntity buyEvent(@RequestParam int amount, @RequestParam int rank,
+                                   @RequestBody RsEvent rsEvent) {
+        return rsService.buy(amount, rank, rsEvent);
+    }
+
 }

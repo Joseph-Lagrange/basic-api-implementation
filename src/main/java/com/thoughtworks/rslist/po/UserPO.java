@@ -9,11 +9,11 @@ import javax.persistence.*;
 import java.util.List;
 
 @Entity
-@Table(name = "user")
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "user")
 public class UserPO {
 
     @Id

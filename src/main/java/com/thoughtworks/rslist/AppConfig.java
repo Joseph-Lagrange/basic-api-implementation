@@ -1,6 +1,7 @@
 package com.thoughtworks.rslist;
 
 import com.thoughtworks.rslist.repository.RsEventRepository;
+import com.thoughtworks.rslist.repository.TradeRepository;
 import com.thoughtworks.rslist.repository.UserRepository;
 import com.thoughtworks.rslist.repository.VoteRepository;
 import com.thoughtworks.rslist.service.RsService;
@@ -22,9 +23,12 @@ public class AppConfig {
     @Autowired
     VoteRepository voteRepository;
 
+    @Autowired
+    TradeRepository tradeRepository;
+
     @Bean
     public RsService rsService() {
-        return new RsService(rsEventRepository, userRepository, voteRepository);
+        return new RsService(rsEventRepository, userRepository, voteRepository, tradeRepository);
     }
 
     @Bean

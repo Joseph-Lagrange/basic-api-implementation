@@ -25,6 +25,10 @@ public class RsEventPO {
 
     private int voteNum;
 
+    private int rankNum;
+
+    private int amount;
+
     @ManyToOne
     private UserPO userPO;
 }

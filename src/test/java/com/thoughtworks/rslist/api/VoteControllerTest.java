@@ -12,9 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -89,7 +88,7 @@ public class VoteControllerTest {
 
         mockMvc.perform(get("/voteRecords")
                 .param("startTimeString", "2020-09-18")
-                .param("endTimeString", "2020-09-20"))
+                .param("endTimeString", "2020-09-21"))
                 .andExpect(jsonPath("$", hasSize(8)))
                 .andExpect(jsonPath("$[0].userId", is(userPO.getId())))
                 .andExpect(jsonPath("$[0].rsEventId", is(rsEventPO.getId())))
@@ -114,7 +113,7 @@ public class VoteControllerTest {
         }
 
         mockMvc.perform(get("/voteRecords")
-                .param("startTimeString", "2020-09-20")
+                .param("startTimeString", "2020-09-21")
                 .param("endTimeString", "2020-09-23"))
                 .andExpect(jsonPath("$", hasSize(0)));
     }
@@ -140,7 +139,7 @@ public class VoteControllerTest {
 
         mockMvc.perform(get("/voteRecords")
                 .param("startTimeString", "2020-09-18")
-                .param("endTimeString", "2020-09-20"))
+                .param("endTimeString", "2020-09-21"))
                 .andExpect(jsonPath("$", hasSize(8)))
                 .andExpect(jsonPath("$[0].userId", is(userPO.getId())))
                 .andExpect(jsonPath("$[0].rsEventId", is(rsEventPO.getId())))
